@@ -5,20 +5,47 @@ import org.springframework.web.bind.annotation.*;
 import org.execut.pontoapi.dto.TratamentoDTO;
 import org.execut.pontoapi.dto.FiltroExportacaoDTO;
 import org.execut.pontoapi.dto.ConfigGeofencingDTO;
-import org.execut.pontoapi.service.PontoService; // <-- Import do Service adicionado
+import org.execut.pontoapi.service.PontoService;
+import org.execut.pontoapi.model.Colaborador; // Import do Modelo
+import org.execut.pontoapi.repository.ColaboradorRepository; // Import do Repositório
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/rh")
 public class RHController {
 
-    // Injeção de dependência organizada no topo
     private final PontoService pontoService;
+    private final ColaboradorRepository colaboradorRepository; // Adicionado para buscar os funcionários
 
-    public RHController(PontoService pontoService) {
+    // Injeção de dependência atualizada
+    public RHController(PontoService pontoService, ColaboradorRepository colaboradorRepository) {
         this.pontoService = pontoService;
+        this.colaboradorRepository = colaboradorRepository;
     }
 
-    // Endpoint atualizado puxando direto do banco de dados
+    // ==========================================
+    // ROTAS NOVAS (Resolve o Erro 404 no Painel)
+    // ==========================================
+
+    @GetMapping("/colaboradores")
+    public ResponseEntity<List<Colaborador>> listarColaboradores() {
+        return ResponseEntity.ok(colaboradorRepository.findAll());
+    }
+
+    @DeleteMapping("/colaborador/{id}")
+    public ResponseEntity<Void> deletarColaborador(@PathVariable Long id) {
+        if(colaboradorRepository.existsById(id)) {
+            colaboradorRepository.deleteById(id);
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.notFound().build();
+    }
+
+    // ==========================================
+    // SUAS ROTAS ORIGINAIS (Mantidas intactas)
+    // ==========================================
+
     @GetMapping("/dashboard/batidas")
     public ResponseEntity<?> obterDashboardBatidas() {
         return ResponseEntity.ok(pontoService.listarTodasBatidas());
