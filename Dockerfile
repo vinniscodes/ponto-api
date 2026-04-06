@@ -1,10 +1,16 @@
-# Etapa 1: Build do Maven
+# ESTÁGIO 1: Compilação (Build)
 FROM maven:3.9.6-eclipse-temurin-17 AS build
+WORKDIR /app
 COPY . .
 RUN mvn clean package -DskipTests
 
-# Etapa 2: Execução com Java 17
+# ESTÁGIO 2: Execução (Runtime)
 FROM eclipse-temurin:17-jdk-alpine
-COPY --from=build /target/*.jar app.jar
+WORKDIR /app
+COPY --from=build /app/target/*.jar app.jar
+
+# Expõe a porta 8080 (O Render vai mapear isso automaticamente)
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+
+# Comando de inicialização passando a porta dinâmica do Render
+ENTRYPOINT ["java", "-Dserver.port=${PORT}", "-Xmx512m", "-jar", "app.jar"]
