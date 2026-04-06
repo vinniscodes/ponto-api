@@ -27,6 +27,7 @@ public class DataSeeder implements CommandLineRunner {
             // Preenchendo outros dados básicos para evitar novos erros de 'not-null'
             teste.setNome("Funcionário Teste");
             teste.setEmail("teste@execut.com");
+            teste.setSenha("123456");
 
             colaboradorRepository.save(teste);
             System.out.println("✅ [SISTEMA] Colaborador 12345 criado automaticamente no banco H2 para testes!");
