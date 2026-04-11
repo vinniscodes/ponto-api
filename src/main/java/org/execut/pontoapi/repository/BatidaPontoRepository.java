@@ -8,6 +8,6 @@ import java.util.List;
 
 @Repository
 public interface BatidaPontoRepository extends JpaRepository<BatidaPonto, Long> {
-    // Permite listar as batidas de uma empresa específica
+    // Este é o método novo, usando as variáveis corretas da nova arquitetura
     List<BatidaPonto> findByTenantIdOrderByDataHoraDesc(String tenantId);
 }
