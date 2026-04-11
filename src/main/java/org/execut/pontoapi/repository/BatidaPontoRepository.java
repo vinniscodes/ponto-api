@@ -8,6 +8,6 @@ import java.util.List;
 
 @Repository
 public interface BatidaPontoRepository extends JpaRepository<BatidaPonto, Long> {
-    // Este é o método novo, usando as variáveis corretas da nova arquitetura
+    // Este é o étodo novo, usando as variáveis corretas da nova arquitetura
     List<BatidaPonto> findByTenantIdOrderByDataHoraDesc(String tenantId);
 }
