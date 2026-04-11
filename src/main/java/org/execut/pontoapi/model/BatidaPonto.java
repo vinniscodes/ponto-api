@@ -4,41 +4,34 @@ import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDateTime;
 
-@Data
 @Entity
-@Table(name = "tb_batidas_ponto")
+@Table(name = "batidas_ponto")
+@Data
 public class BatidaPonto {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "colaborador_id", nullable = false)
-    private Colaborador colaborador;
+    @Column(nullable = false, name = "tenant_id")
+    private String tenantId;
 
-    // RN-001: Nome antigo mantido para o React, mas o banco rejeita qualquer 'update' nesta coluna.
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime horaBatida;
+    @Column(nullable = false)
+    private String matricula;
 
-    @Column(updatable = false)
-    private String deviceId;
+    private String nomeFuncionario;
 
-    @Column(updatable = false)
-    private boolean isRegistroOffline;
+    @Column(nullable = false)
+    private LocalDateTime dataHora;
 
-    @Column(updatable = false)
     private Double latitude;
-
-    @Column(updatable = false)
     private Double longitude;
 
-    @Column(updatable = false)
-    private String caminhoFotoSelfie;
+    // Dados de Auditoria e Antifraude (Item 15 e 16 do PDF)
+    private Boolean isMocked;
+    private Boolean offline;
+    private String deviceId;
 
-    private LocalDateTime dataLimiteRetencaoLgpd;
-
-    private boolean dadosSensiveisAnonimizados = false;
-
-    private boolean exportadoParaErp = false;
+    @Column(columnDefinition = "TEXT") // TEXT é usado porque a foto Base64 é uma string gigante
+    private String fotoBase64;
 }

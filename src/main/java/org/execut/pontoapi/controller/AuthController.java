@@ -2,56 +2,46 @@ package org.execut.pontoapi.controller;
 
 import org.execut.pontoapi.model.Colaborador;
 import org.execut.pontoapi.repository.ColaboradorRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/auth")
 @CrossOrigin(origins = "*")
 public class AuthController {
 
-    private final ColaboradorRepository repository;
+    @Autowired
+    private ColaboradorRepository colaboradorRepository;
 
-    public AuthController(ColaboradorRepository repository) {
-        this.repository = repository;
-    }
-
+    // Novo endpoint de Login compatível com a Nuvem Multi-Tenant
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Map<String, String> credenciais) {
-        String login = credenciais.get("login"); // Pode ser email ou matricula
-        String password = credenciais.get("password");
+    public ResponseEntity<?> autenticarPainelWeb(
+            @RequestAttribute("tenantId") String tenantId,
+            @RequestBody Map<String, String> credenciais) {
 
-        Optional<Colaborador> userOpt;
+        String matricula = credenciais.get("matricula");
 
-        // Se o login tem '@', é o Admin tentando entrar por e-mail. Se não, é funcionário por matrícula.
-        if (login.contains("@")) {
-            userOpt = repository.findByEmail(login);
-        } else {
-            userOpt = repository.findByMatricula(login);
+        if (matricula == null) {
+            return ResponseEntity.badRequest().body("A matrícula é obrigatória.");
         }
 
-        if (userOpt.isEmpty() || !userOpt.get().getAtivo()) {
-            return ResponseEntity.status(422).body(Map.of("message", "Usuário não encontrado ou inativo"));
+        // Procura a matrícula APENAS dentro dos funcionários desta filial
+        Optional<Colaborador> user = colaboradorRepository.findByTenantId(tenantId).stream()
+                .filter(c -> c.getMatricula().equals(matricula))
+                .findFirst();
+
+        if (user.isPresent()) {
+            // Opcional: Se quiser que SÓ administradores entrem no Painel Web, pode validar assim:
+            // se (!user.get().getIsAdmin()) return ResponseEntity.status(403).body("Acesso negado.");
+
+            return ResponseEntity.ok(user.get());
         }
 
-        Colaborador user = userOpt.get();
-
-        // Checagem de Senha
-        if (!user.getSenha().equals(password)) {
-            return ResponseEntity.status(422).body(Map.of("message", "Senha incorreta"));
-        }
-
-        return ResponseEntity.ok(Map.of(
-                "token", UUID.randomUUID().toString(), // Token provisório
-                "user", Map.of(
-                        "id", user.getId(),
-                        "name", user.getNome(),
-                        "role", user.getRole(),
-                        "matricula", user.getMatricula()
-                )
-        ));
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Matrícula inválida para esta filial.");
     }
 }

@@ -2,39 +2,40 @@ package org.execut.pontoapi.config;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.execut.pontoapi.repository.FilialRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 @Component
 public class TenantInterceptor implements HandlerInterceptor {
 
-    private static final String TENANT_HEADER = "X-Client-Key";
-
-    // O ThreadLocal guarda o ID da empresa apenas durante o tempo de vida daquela requisição
-    private static final ThreadLocal<String> currentTenant = new ThreadLocal<>();
+    @Autowired
+    private FilialRepository filialRepository;
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        String tenantId = request.getHeader(TENANT_HEADER);
+        // Ignora o CORS preflight (OPTIONS)
+        if (request.getMethod().equals("OPTIONS")) return true;
 
-        // Se a rota for do mobile e não tiver a chave da empresa, o servidor rejeita na hora (Segurança Zero-Trust)
-        if (request.getRequestURI().contains("/api/mobile/") && (tenantId == null || tenantId.isEmpty())) {
+        String clientKey = request.getHeader("X-Client-Key");
+
+        if (clientKey == null || clientKey.trim().isEmpty()) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.getWriter().write("{\"erro\": \"Acesso Negado: Chave de Cliente Ausente\"}");
+            response.getWriter().write("Acesso Negado: Chave de filial (X-Client-Key) ausente.");
             return false;
         }
 
-        currentTenant.set(tenantId);
+        // Valida se a empresa realmente existe no banco de dados
+        String tenantId = clientKey.toUpperCase().trim();
+        if (!filialRepository.existsById(tenantId)) {
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.getWriter().write("Acesso Negado: Filial não encontrada ou inativa.");
+            return false;
+        }
+
+        // Passa o TenantId validado para a requisição, para os Controllers usarem
+        request.setAttribute("tenantId", tenantId);
         return true;
-    }
-
-    public static String getCurrentTenant() {
-        return currentTenant.get();
-    }
-
-    @Override
-    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
-        // Limpa a memória após processar para evitar vazamento de dados entre clientes
-        currentTenant.remove();
     }
 }

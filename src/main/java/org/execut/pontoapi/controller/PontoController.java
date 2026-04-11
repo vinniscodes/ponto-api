@@ -1,53 +1,28 @@
 package org.execut.pontoapi.controller;
 
 import org.execut.pontoapi.model.BatidaPonto;
-import org.execut.pontoapi.model.Colaborador;
-import org.execut.pontoapi.repository.BatidaRepository;
-import org.execut.pontoapi.repository.ColaboradorRepository;
+import org.execut.pontoapi.repository.BatidaPontoRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import java.time.LocalDateTime;
-import java.util.Map;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/ponto")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "*") // Permite que o seu React Web aceda
 public class PontoController {
 
-    private final BatidaRepository batidaRepository;
-    private final ColaboradorRepository colaboradorRepository;
+    @Autowired
+    private BatidaPontoRepository batidaPontoRepository;
 
-    public PontoController(BatidaRepository batidaRepository, ColaboradorRepository colaboradorRepository) {
-        this.batidaRepository = batidaRepository;
-        this.colaboradorRepository = colaboradorRepository;
-    }
+    // Rota usada pelo Painel Administrativo Web para listar as batidas na tabela
+    @GetMapping("/listar")
+    public ResponseEntity<?> listarBatidasDaEmpresa(@RequestAttribute("tenantId") String tenantId) {
 
-    // 📍 ROTA PARA O COLABORADOR BATER PONTO (Com GPS)
-    @PostMapping("/bater")
-    public ResponseEntity<?> baterPonto(@RequestBody BatidaPonto requestData, @RequestHeader("Usuario-ID") Long userId) {
-        Colaborador user = colaboradorRepository.findById(userId).orElseThrow();
+        // Vai buscar apenas as batidas da empresa que fez o pedido (Isolamento de Segurança)
+        List<BatidaPonto> batidas = batidaPontoRepository.findByTenantIdOrderByDataHoraDesc(tenantId);
 
-        BatidaPonto novaBatida = new BatidaPonto();
-        novaBatida.setColaborador(user);
-        novaBatida.setHoraBatida(LocalDateTime.now());
-        novaBatida.setLatitude(requestData.getLatitude());
-        novaBatida.setLongitude(requestData.getLongitude());
-
-        batidaRepository.save(novaBatida);
-        return ResponseEntity.ok(Map.of("message", "Ponto registrado com sucesso na localização atual!"));
-    }
-
-    // 👔 ROTA ADMIN: CRIAR COLABORADOR
-    @PostMapping("/admin/colaborador")
-    public ResponseEntity<?> criarColaborador(@RequestBody Colaborador novoUser) {
-        // A mágica: A senha vira os primeiros 6 dígitos do CPF (remove pontuação primeiro)
-        String cpfLimpo = novoUser.getCpf().replaceAll("[^0-9]", "");
-        String senhaGerada = cpfLimpo.substring(0, 6);
-
-        novoUser.setSenha(senhaGerada);
-        novoUser.setRole("colaborador");
-
-        colaboradorRepository.save(novoUser);
-        return ResponseEntity.ok(Map.of("message", "Colaborador criado! Senha de acesso: " + senhaGerada));
+        return ResponseEntity.ok(batidas);
     }
 }

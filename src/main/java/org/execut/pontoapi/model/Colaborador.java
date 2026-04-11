@@ -2,34 +2,29 @@ package org.execut.pontoapi.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
-import java.time.LocalDateTime;
 
-@Data
 @Entity
 @Table(name = "colaboradores")
+@Data
 public class Colaborador {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
     private String nome;
 
-    @Column(unique = true)
-    private String email;
-
-    @Column(unique = true, nullable = false)
-    private String cpf;
-
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false, unique = true)
     private String matricula;
 
-    private String senha;
-    private String role = "colaborador";
-    private Boolean ativo = true;
-    private LocalDateTime criadoEm = LocalDateTime.now();
+    @Column(nullable = false)
+    private String cargo;
+
+    @Column(nullable = false)
+    private Boolean isAdmin;
 
 
-    @ManyToOne
-    @JoinColumn(name = "filial_id")
-    private Filial filial;
+    @Column(nullable = false, name = "tenant_id")
+    private String tenantId;
 }
