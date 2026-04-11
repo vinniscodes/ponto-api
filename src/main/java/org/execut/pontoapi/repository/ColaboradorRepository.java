@@ -9,7 +9,9 @@ import java.util.List;
 @Repository
 public interface ColaboradorRepository extends JpaRepository<Colaborador, Long> {
 
+    // Busca os funcionários de uma empresa específica
     List<Colaborador> findByTenantId(String tenantId);
 
+    // Verifica se a matrícula já existe na filial (Antifraude)
     boolean existsByMatriculaAndTenantId(String matricula, String tenantId);
 }
