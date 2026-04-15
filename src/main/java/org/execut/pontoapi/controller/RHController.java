@@ -12,43 +12,39 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/rh")
-@CrossOrigin(origins = "*")
+@CrossOrigin(origins = "*") // Essencial para rodar no navegador Web
 public class RHController {
 
     @Autowired
     private ColaboradorRepository repository;
 
-    // 1. ENDPOINT DE CADASTRO
     @PostMapping("/colaboradores")
     public ResponseEntity<?> cadastrarColaborador(
-            @RequestAttribute("tenantId") String tenantId, // Pega a chave direto do Interceptor de Segurança
+            @RequestHeader("X-Client-Key") String hashEmpresa, // Lê direto do Header!
             @RequestBody Colaborador novoColaborador) {
 
-        System.out.println("Tentativa de cadastro recebida. Matrícula: " + novoColaborador.getMatricula() + " | Filial: " + tenantId);
+        String tenantId = hashEmpresa.toUpperCase().trim();
+        System.out.println("Tentativa de cadastro. Matrícula: " + novoColaborador.getMatricula() + " | Filial: " + tenantId);
 
-        // Se o aplicativo não enviar se é admin, define como falso por padrão
         if (novoColaborador.getIsAdmin() == null) {
             novoColaborador.setIsAdmin(false);
         }
 
         if (repository.existsByMatriculaAndTenantId(novoColaborador.getMatricula(), tenantId)) {
-            System.out.println("Bloqueado: Matrícula já existe.");
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Matrícula já existe nesta filial.");
         }
 
         novoColaborador.setTenantId(tenantId);
         Colaborador salvo = repository.save(novoColaborador);
-
-        System.out.println("Sucesso! Colaborador salvo no banco.");
         return ResponseEntity.status(HttpStatus.CREATED).body(salvo);
     }
 
-    // 2. ENDPOINT DE LOGIN DINÂMICO
     @GetMapping("/login/{matricula}")
     public ResponseEntity<?> realizarLogin(
-            @RequestAttribute("tenantId") String tenantId,
+            @RequestHeader("X-Client-Key") String hashEmpresa, // Lê direto do Header!
             @PathVariable String matricula) {
 
+        String tenantId = hashEmpresa.toUpperCase().trim();
         List<Colaborador> colaboradores = repository.findByTenantId(tenantId);
         Optional<Colaborador> funcionario = colaboradores.stream()
                 .filter(c -> c.getMatricula().equals(matricula))
@@ -61,9 +57,9 @@ public class RHController {
         }
     }
 
-    // 3. ENDPOINT DE LISTAGEM (Para o App e Painel Web)
     @GetMapping("/colaboradores")
-    public ResponseEntity<?> listarColaboradores(@RequestAttribute("tenantId") String tenantId) {
+    public ResponseEntity<?> listarColaboradores(@RequestHeader("X-Client-Key") String hashEmpresa) {
+        String tenantId = hashEmpresa.toUpperCase().trim();
         List<Colaborador> lista = repository.findByTenantId(tenantId);
         return ResponseEntity.ok(lista);
     }
