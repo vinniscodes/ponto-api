@@ -10,17 +10,15 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/ponto")
-@CrossOrigin(origins = "*") // Permite que o seu React Web aceda
+@CrossOrigin(origins = "*")
 public class PontoController {
 
     @Autowired
     private BatidaPontoRepository batidaPontoRepository;
 
-    // Rota usada pelo Painel Administrativo Web para listar as batidas na tabela
     @GetMapping("/listar")
-    public ResponseEntity<?> listarBatidasDaEmpresa(@RequestAttribute("tenantId") String tenantId) {
-
-        // Vai buscar apenas as batidas da empresa que fez o pedido (Isolamento de Segurança)
+    public ResponseEntity<?> listarBatidasDaEmpresa(@RequestHeader("X-Client-Key") String hashEmpresa) {
+        String tenantId = hashEmpresa.toUpperCase().trim();
         List<BatidaPonto> batidas = batidaPontoRepository.findByTenantIdOrderByDataHoraDesc(tenantId);
 
         return ResponseEntity.ok(batidas);
